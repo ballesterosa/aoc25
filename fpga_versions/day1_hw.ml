@@ -35,7 +35,7 @@ module I = struct
     valid : 'a;
     direction : 'a; (* 1 = right, 0 = left *)
     value : 'a [@bits 32];
-  } [@@deriving sexp_of, hardcaml ~rtlmangle:true]
+  } [@@deriving sexp_of, hardcaml]
 end
 
 module O = struct
@@ -43,7 +43,7 @@ module O = struct
     curr_pos : 'a [@bits 32];
     count : 'a [@bits 32];
     part_2_count : 'a [@bits 32];
-  } [@@deriving sexp_of, hardcaml ~rtlmangle:true]
+  } [@@deriving sexp_of, hardcaml]
 end
 
 (* RTL circuit implementation *)
