@@ -4,14 +4,12 @@ use std::time::Instant;
 const DIRECTIONS: [(i32, i32); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
 
 #[inline]
-fn count_adjacent(grid: &[Vec<char>], i: usize, j: usize, n: usize, m: usize) -> u32 {
+fn count_adjacent(grid: &[Vec<char>], i: usize, j: usize) -> u32 {
     let mut count = 0;
     for &(di, dj) in &DIRECTIONS {
-        let ni = i as i32 + di;
-        let nj = j as i32 + dj;
-        if ni >= 0 && ni < n as i32 && nj >= 0 && nj < m as i32 {
-            count += (grid[ni as usize][nj as usize] == '@') as u32;
-        }
+        let ni = (i as i32 + di) as usize;
+        let nj = (j as i32 + dj) as usize;
+        count += (grid[ni][nj] == '@') as u32;
     }
     count
 }
@@ -22,10 +20,10 @@ fn part1(grid: &[Vec<char>]) -> u32 {
     let m = grid[0].len();
     let mut sum = 0;
 
-    for i in 0..n {
-        for j in 0..m {
+    for i in 1..n-1 {
+        for j in 1..m-1 {
             if grid[i][j] != '.' {
-                sum += (count_adjacent(grid, i, j, n, m) < 4) as u32;
+                sum += (count_adjacent(grid, i, j) < 4) as u32;
             }
         }
     }
@@ -38,9 +36,9 @@ fn part2(grid: &mut [Vec<char>]) -> u32 {
     let m = grid[0].len();
     let mut sum = 0;
 
-    for i in 0..n {
-        for j in 0..m {
-            if grid[i][j] != '.' && count_adjacent(grid, i, j, n, m) < 4 {
+    for i in 1..n-1 {
+        for j in 1..m-1 {
+            if grid[i][j] != '.' && count_adjacent(grid, i, j) < 4 {
                 grid[i][j] = '.';
                 sum += 1;
             }
@@ -50,13 +48,25 @@ fn part2(grid: &mut [Vec<char>]) -> u32 {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Part 1
-    let start_time = Instant::now();
     let input: String = fs::read_to_string("day4_in.txt")?;
+
+    // Add border of '.' around the grid
     let mut grid: Vec<Vec<char>> = input
         .lines()
-        .map(|line| line.chars().collect())
+        .map(|line| {
+            let mut row = vec!['.'];
+            row.extend(line.chars());
+            row.push('.');
+            row
+        })
         .collect();
+
+    let m = grid[0].len();
+    grid.insert(0, vec!['.'; m]);
+    grid.push(vec!['.'; m]);
+
+    // Part 1
+    let start_time = Instant::now();
     let sum1 = part1(&grid);
     let duration1 = start_time.elapsed();
 
