@@ -49,8 +49,6 @@ fn part2(grid: &mut [Vec<char>]) -> u32 {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input: String = fs::read_to_string("day4_in.txt")?;
-
-    // Add border of '.' around the grid
     let mut grid: Vec<Vec<char>> = input
         .lines()
         .map(|line| {
