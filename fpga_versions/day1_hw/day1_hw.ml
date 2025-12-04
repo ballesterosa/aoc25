@@ -46,7 +46,6 @@ module O = struct
   } [@@deriving sexp_of, hardcaml]
 end
 
-(* RTL circuit implementation *)
 let create (i : _ I.t) =
   let open Signal in
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.clear () in
@@ -157,8 +156,8 @@ let simulate () =
 let generate_verilog () =
   let module Circuit = Circuit.With_interface(I)(O) in
   let circuit = Circuit.create_exn ~name:"day1_hw" create in
-  let verilog = Rtl.output ~output_mode:(To_file "day1_hw.v") Verilog circuit in
-  printf "Generated Verilog RTL: day1_hw.v\n";
+  let verilog = Rtl.output ~output_mode:(To_file "day1_hw/day1_hw.v") Verilog circuit in
+  printf "Generated Verilog RTL: day1_hw/day1_hw.v\n";
   verilog
 
 let () =
