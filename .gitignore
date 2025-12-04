@@ -1,12 +1,23 @@
-# Executables (no extension)
+# Executables
 day1
 day2
+day3
+day4
+day5
+day6
+day7
+day8
+day9
+day10
+day11
+day12
 
 # Verilog simulation outputs
 *.vcd
 *.vvp
 *_sim
 *_debug
+*_tb
 
 # Compiled object files
 *.o
@@ -15,4 +26,5 @@ day2
 *.cmx
 
 _build/
+target/
 day1_hw.v
