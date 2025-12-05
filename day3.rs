@@ -64,10 +64,9 @@ fn part2(input: String) -> u64 {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let input: String = fs::read_to_string("day3_in.txt")?;
-
     // Part 1
     let start_time = Instant::now();
+    let input: String = fs::read_to_string("day3_in.txt")?;
     let sum1 = part1(input.clone());
     let duration1 = start_time.elapsed();
 

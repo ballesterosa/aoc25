@@ -27,4 +27,5 @@ day12
 
 _build/
 target/
-day*_hw.v
+day*.v
+.vscode/

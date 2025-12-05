@@ -48,6 +48,8 @@ fn part2(grid: &mut [Vec<char>]) -> u32 {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Part 1
+    let start_time = Instant::now();
     let input: String = fs::read_to_string("day4_in.txt")?;
     let mut grid: Vec<Vec<char>> = input
         .lines()
@@ -62,9 +64,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let m = grid[0].len();
     grid.insert(0, vec!['.'; m]);
     grid.push(vec!['.'; m]);
-
-    // Part 1
-    let start_time = Instant::now();
     let sum1 = part1(&grid);
     let duration1 = start_time.elapsed();
 
