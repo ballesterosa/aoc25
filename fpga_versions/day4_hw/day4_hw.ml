@@ -102,7 +102,7 @@ module GridProcessor = struct
     let parser_out = Parser.create { Parser.I.clock = i.clock; clear = i.clear; valid = i.valid; char_data = i.char_data } in
     let parsed_bit = parser_out.is_at in
 
-    (* line buffers: We need 3 rows to form a 3x3 window
+    (* line buffers: we need 3 rows to form a 3x3 window
      * architecture: [row2] <- [row1] <- [row0] <- parsed_bit
      * when we have 3 full rows, we can start extracting windows *)
 
