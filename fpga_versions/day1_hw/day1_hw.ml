@@ -3,6 +3,7 @@
  * Division by 100 is implemented using reciprocal multiplication:
  * x / 100 ≈ (x * 0x028F5C29) >> 32
  * which is the standard hardware optimization for division by constants
+ * found the magic number from this formula: ceil(2^32 / 100)
  *)
 
 open! Core
