@@ -11,7 +11,7 @@ fn parse_direction_value(s: &str) -> (u8, i32) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
 
-    let input = fs::read_to_string("day1_in.txt")?;
+    let input = fs::read_to_string("inputs/day1_in.txt")?;
 
     let mut curr_pos: i32 = 50;
     let mut count: i32 = 0;

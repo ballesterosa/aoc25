@@ -177,7 +177,7 @@ module GridProcessor = struct
 end
 
 let simulate () =
-  let lines = In_channel.read_lines "../day4_in.txt" in
+  let lines = In_channel.read_lines "../inputs/day4_in.txt" in
   let n = List.length lines in
   let m = String.length (List.hd_exn lines) in
 

@@ -140,7 +140,7 @@ fn solve(parsed: &Input) -> u64 {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Part 1
     let start_time = Instant::now();
-    let input = fs::read_to_string("day6_in.txt")?;
+    let input = fs::read_to_string("inputs/day6_in.txt")?;
     let parsed = part1_parse_input(&input);
     let sum1 = solve(&parsed);
     let duration1 = start_time.elapsed();

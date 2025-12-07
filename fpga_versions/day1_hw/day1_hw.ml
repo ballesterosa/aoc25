@@ -135,7 +135,7 @@ let simulate () =
   inputs.valid := Bits.gnd;
   Cyclesim.cycle sim;
 
-  let lines = In_channel.read_lines "../day1_in.txt" in
+  let lines = In_channel.read_lines "../inputs/day1_in.txt" in
   List.iter lines ~f:(fun line ->
     let direction = if Char.equal line.[0] 'R' then 1 else 0 in
     let value = Int.of_string (String.sub line ~pos:1 ~len:(String.length line - 1)) in

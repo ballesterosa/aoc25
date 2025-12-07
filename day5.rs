@@ -81,7 +81,7 @@ fn part2(parsed: &Input) -> u64 {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Part 1
     let start_time = Instant::now();
-    let input: String = fs::read_to_string("day5_in.txt")?;
+    let input: String = fs::read_to_string("inputs/day5_in.txt")?;
     let mut parsed: Input = parse_input(&input);
     coalesce_ranges(&mut parsed.ranges);
     let sum1 = part1(&parsed);

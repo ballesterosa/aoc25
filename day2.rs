@@ -66,7 +66,7 @@ fn part2(i: u64) -> u64 {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Part 1
     let start_time = Instant::now();
-    let input = fs::read_to_string("day2_in.txt")?;
+    let input = fs::read_to_string("inputs/day2_in.txt")?;
     let mut sum1: u64 = 0;
     for range in input.split(',') {
         let (start, end) = parse_direction_value(range.trim());
