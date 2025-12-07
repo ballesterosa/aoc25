@@ -1,11 +1,7 @@
-(* Hardcaml Implementation of Day 6
+(* Hardcaml Implementation of Day 6 Part 1
  *
- * steps:
- * 1. stream input bytes in
- * 2. parse to extract numbers and operators
- * 3. store 4 numbers + 1 operator per column in arrays
- * 4. compute each column's result (multiply or add)
- * 5. sum everything
+ * stream input, parse numbers and operators, store per column,
+ * compute each column result (multiply or add), sum everything
  *)
 
 open! Core
@@ -29,9 +25,6 @@ module O = struct
     { ready : 'a [@bits 1]
     ; done_ : 'a [@bits 1]
     ; grand_total : 'a [@bits 64]
-    ; debug_state : 'a [@bits 3]
-    ; debug_col : 'a [@bits 12]
-    ; debug_row : 'a [@bits 3]
     }
   [@@deriving sexp_of, hardcaml]
 end
@@ -47,7 +40,6 @@ let create (i : Signal.t I.t) =
   let ascii_star = 42 in
   let ascii_plus = 43 in
 
-  (* state: 0=idle, 1=parsing, 2=computing, 3=done *)
   let state = wire 3 in
 
   let is_digit = (i.data_byte >=:. ascii_0) &: (i.data_byte <=:. ascii_9) in
@@ -98,7 +90,7 @@ let create (i : Signal.t I.t) =
       write_clock = i.clock;
       write_address = uresize col col_bits;
       write_enable = parse_enable &: (row ==:. 4) &: is_operator;
-      write_data = uresize is_star 32;  (* 1 for *, 0 for + *)
+      write_data = uresize is_star 32;
     } |]
     ~read_addresses:[| uresize read_addr col_bits |] in
 
@@ -121,10 +113,10 @@ let create (i : Signal.t I.t) =
   let all_done = compute_enable &: (compute_col_reg >=: max_col) in
   let state_reg = reg_fb spec ~width:3 ~enable:vdd ~f:(fun st ->
     mux st [
-      mux2 i.start (of_int ~width:3 1) (of_int ~width:3 0);  (* 0: Idle *)
-      mux2 i.input_done (of_int ~width:3 2) (of_int ~width:3 1);  (* 1: Parsing *)
-      mux2 all_done (of_int ~width:3 3) (of_int ~width:3 2);  (* 2: Computing *)
-      of_int ~width:3 3;  (* 3: Done *)
+      mux2 i.start (of_int ~width:3 1) (of_int ~width:3 0);
+      mux2 i.input_done (of_int ~width:3 2) (of_int ~width:3 1);
+      mux2 all_done (of_int ~width:3 3) (of_int ~width:3 2);
+      of_int ~width:3 3;
     ]) in
   let () = state <== state_reg in
 
@@ -134,7 +126,7 @@ let create (i : Signal.t I.t) =
   let read_v3 = reg spec ~enable:compute_enable (uresize row3_data.(0) 64) in
   let read_op = reg spec ~enable:compute_enable ops_data.(0) in
 
-  let is_mult = bit read_op 0 in
+  let is_mult = bit read_op 0 in  (* 1 for *, 0 for + *)
   let mult_result =
     let m1 = uresize (read_v0 *: read_v1) 64 in
     let m2 = uresize (m1 *: read_v2) 64 in
@@ -149,9 +141,6 @@ let create (i : Signal.t I.t) =
     ready = state ==:. 0;
     done_ = state ==:. 3;
     grand_total = grand_total;
-    debug_state = state;
-    debug_col = mux2 compute_enable compute_col_reg col;
-    debug_row = row;
   }
 
 (* testbench *)
@@ -164,7 +153,7 @@ let () =
   let input_file = "../inputs/day6_in.txt" in
   let input_data = In_channel.read_all input_file in
   let bytes = String.to_array input_data in
-  printf "processing %d bytes from %s\n" (Array.length bytes) input_file;
+  printf "Processing %d bytes from %s\n" (Array.length bytes) input_file;
 
   (* reset *)
   inputs.clear := Bits.vdd;
@@ -176,14 +165,11 @@ let () =
   Cyclesim.cycle sim;
   inputs.start := Bits.gnd;
 
-  Array.iteri bytes ~f:(fun idx byte ->
+  Array.iteri bytes ~f:(fun _idx byte ->
     inputs.data_valid := Bits.vdd;
     inputs.data_byte := Bits.of_int ~width:8 (Char.to_int byte);
     Cyclesim.cycle sim;
-    if idx > 0 && idx mod 1000 = 0 then
-      printf "loaded %d bytes...\r%!" idx;
   );
-  printf "loaded all %d bytes, starting computation...%!\n" (Array.length bytes);
   inputs.data_valid := Bits.gnd;
   inputs.input_done := Bits.vdd;
   Cyclesim.cycle sim;
@@ -191,12 +177,10 @@ let () =
   let max_cycles = 100000 in
   let rec wait_done cycle =
     if cycle > max_cycles then
-      failwith "timeout waiting for done"
+      failwith "Timeout waiting for done"
     else if Bits.to_bool !(outputs.done_) then
       cycle
     else begin
-      if cycle mod 100 = 0 then
-        printf "computing column %d...\r%!" (Bits.to_int !(outputs.debug_col));
       Cyclesim.cycle sim;
       wait_done (cycle + 1)
     end in
@@ -204,6 +188,6 @@ let () =
   let cycles = wait_done 0 in
 
   let total = Bits.to_int64 !(outputs.grand_total) in
-  printf "\n\n=== result ===\n";
+  printf "\n=== result ===\n";
   printf "total: %Ld\n" total;
-  printf "completed in %d compute cycles\n" cycles;
+  printf "completed in %d cycles\n" cycles;
