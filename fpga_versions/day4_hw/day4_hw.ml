@@ -307,17 +307,17 @@ let generate_verilog () =
   let module Circuit = Circuit.With_interface(Core.I)(Core.O) in
   let circuit = Circuit.create_exn ~name:"day4_hw" Core.create in
   let _verilog = Rtl.output ~output_mode:(To_file "day4_hw/day4_hw.v") Verilog circuit in
-  printf "Generated Verilog RTL: day4_hw/day4_hw.v\n";
+  printf "generated verilog RTL: day4_hw/day4_hw.v\n";
 
   let module ParserCircuit = Hardcaml.Circuit.With_interface(Parser.I)(Parser.O) in
   let parser_circuit = ParserCircuit.create_exn ~name:"day4_parser" Parser.create in
   let _ = Rtl.output ~output_mode:(To_file "day4_hw/day4_parser.v") Verilog parser_circuit in
-  printf "Generated Verilog RTL: day4_hw/day4_parser.v\n";
+  printf "generated verilog RTL: day4_hw/day4_parser.v\n";
 
   let module GridCircuit = Hardcaml.Circuit.With_interface(GridProcessor.I)(GridProcessor.O) in
   let grid_circuit = GridCircuit.create_exn ~name:"day4_grid_processor" GridProcessor.create in
   let _ = Rtl.output ~output_mode:(To_file "day4_hw/day4_grid_processor.v") Verilog grid_circuit in
-  printf "Generated Verilog RTL: day4_hw/day4_grid_processor.v\n"
+  printf "generated verilog RTL: day4_hw/day4_grid_processor.v\n"
 
 let () =
   let start_time = Time_ns.now () in
@@ -327,10 +327,10 @@ let () =
   let end_time = Time_ns.now () in
   let duration = Time_ns.diff end_time start_time in
 
-  printf "Part 1 sum:  %d\n" part1;
-  printf "Part 2 sum:  %d\n" part2;
-  printf "Time:        %s\n" (Time_ns.Span.to_string duration);
+  printf "part 1 sum:  %d\n" part1;
+  printf "part 2 sum:  %d\n" part2;
+  printf "time:        %s\n" (Time_ns.Span.to_string duration);
   printf "\n";
 
   let _ = generate_verilog () in
-  printf "Verilog RTL successfully generated!\n"
+  printf "verilog RTL successfully generated!\n"

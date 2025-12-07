@@ -143,6 +143,12 @@ let create (i : Signal.t I.t) =
     grand_total = grand_total;
   }
 
+let generate_verilog () =
+  let module Circuit = Circuit.With_interface(I)(O) in
+  let circuit = Circuit.create_exn ~name:"day6_hw_part1" create in
+  let _verilog = Rtl.output ~output_mode:(To_file "day6_hw/day6_hw_part1.v") Verilog circuit in
+  printf "generated Verilog RTL: day6_hw/day6_hw_part1.v\n"
+
 (* testbench *)
 let () =
   let module Sim = Cyclesim.With_interface(I)(O) in
@@ -153,7 +159,7 @@ let () =
   let input_file = "../inputs/day6_in.txt" in
   let input_data = In_channel.read_all input_file in
   let bytes = String.to_array input_data in
-  printf "Processing %d bytes from %s\n" (Array.length bytes) input_file;
+  printf "processing %d bytes from %s\n" (Array.length bytes) input_file;
 
   (* reset *)
   inputs.clear := Bits.vdd;
@@ -177,7 +183,7 @@ let () =
   let max_cycles = 100000 in
   let rec wait_done cycle =
     if cycle > max_cycles then
-      failwith "Timeout waiting for done"
+      failwith "timeout waiting for done"
     else if Bits.to_bool !(outputs.done_) then
       cycle
     else begin
@@ -191,3 +197,6 @@ let () =
   printf "\n=== result ===\n";
   printf "total: %Ld\n" total;
   printf "completed in %d cycles\n" cycles;
+
+  let _ = generate_verilog () in
+  printf "verilog RTL successfully generated!\n"

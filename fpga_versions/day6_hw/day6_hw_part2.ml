@@ -171,6 +171,12 @@ let create (i : Signal.t I.t) =
     grand_total = grand_total;
   }
 
+let generate_verilog () =
+  let module Circuit = Circuit.With_interface(I)(O) in
+  let circuit = Circuit.create_exn ~name:"day6_hw_part2" create in
+  let _verilog = Rtl.output ~output_mode:(To_file "day6_hw/day6_hw_part2.v") Verilog circuit in
+  printf "generated Verilog RTL: day6_hw/day6_hw_part2.v\n"
+
 (* testbench *)
 let () =
   let module Sim = Cyclesim.With_interface(I)(O) in
@@ -219,3 +225,6 @@ let () =
   printf "\n=== result ===\n";
   printf "total: %Ld\n" total;
   printf "completed in %d cycles\n" cycles;
+
+  let _ = generate_verilog () in
+  printf "verilog RTL successfully generated!\n"
