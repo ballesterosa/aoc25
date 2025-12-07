@@ -161,7 +161,6 @@ let () =
   let inputs = Cyclesim.inputs sim in
   let outputs = Cyclesim.outputs sim in
 
-  (* Read input file *)
   let input_file = "../inputs/day6_in.txt" in
   let input_data = In_channel.read_all input_file in
   let bytes = String.to_array input_data in

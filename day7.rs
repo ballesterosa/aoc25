@@ -2,6 +2,7 @@ use std::fs;
 use std::time::Instant;
 use std::collections::HashMap;
 
+#[inline]
 fn part1(input: &str) -> u32 {
     let mut lines = input.lines().step_by(2);
     let first_line = lines.next().unwrap();
@@ -25,6 +26,7 @@ fn part1(input: &str) -> u32 {
     sum
 }
 
+#[inline]
 fn part2(input: &str) -> usize {
     let mut lines = input.lines().step_by(2);
     let first_line = lines.next().unwrap();
