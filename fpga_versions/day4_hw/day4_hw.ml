@@ -22,7 +22,6 @@ module Parser = struct
   end
 
   let create (i : _ I.t) =
-    let open Signal in
     (* '@' is ASCII 64 (0x40) *)
     let is_at = i.char_data ==:. 64 in
     let valid_out = reg_fb (Reg_spec.create ~clock:i.clock ~clear:i.clear ()) ~width:1 ~f:(fun _ -> i.valid) in
@@ -49,8 +48,6 @@ module Core = struct
   end
 
   let create (i : _ I.t) =
-    let open Signal in
-
     (* extract the 9 bits from window using bit select *)
     let nw = select i.window 0 0 in
     let n  = select i.window 1 1 in
@@ -96,7 +93,6 @@ module GridProcessor = struct
   end
 
   let create (i : _ I.t) =
-    let open Signal in
     let spec = Reg_spec.create ~clock:i.clock ~clear:i.clear () in
 
     let parser_out = Parser.create { Parser.I.clock = i.clock; clear = i.clear; valid = i.valid; char_data = i.char_data } in

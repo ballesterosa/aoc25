@@ -30,7 +30,6 @@ module O = struct
 end
 
 let create (i : Signal.t I.t) =
-  let open Signal in
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.clear () in
 
   let ascii_space = 32 in

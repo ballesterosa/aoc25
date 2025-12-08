@@ -13,7 +13,6 @@ open! Signal
 (* division by 100 using reciprocal multiplication
  * magic number from libdivide algorithm *)
 let div_by_100 x =
-  let open Signal in
   (* multiply by reciprocal for unsigned division by 100 *)
   let magic = of_int ~width:32 0x028F5C29 in
   let product = uresize (x *: magic) 64 in
@@ -23,7 +22,6 @@ let div_by_100 x =
 
 (* modulo 100 using subtraction: x - (x/100)*100 *)
 let mod_by_100 x =
-  let open Signal in
   let quotient = div_by_100 x in
   let hundred = of_int ~width:32 100 in
   let mult_result = uresize (quotient *: hundred) 32 in
@@ -48,7 +46,6 @@ module O = struct
 end
 
 let create (i : _ I.t) =
-  let open Signal in
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.clear () in
   let spec_with_reset = Reg_spec.override spec ~clear_to:(of_int ~width:32 50) in
 
