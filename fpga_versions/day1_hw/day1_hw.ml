@@ -14,17 +14,17 @@ open! Signal
  * magic number from libdivide algorithm *)
 let div_by_100 x =
   (* multiply by reciprocal for unsigned division by 100 *)
-  let magic = of_int ~width:32 0x028F5C29 in
-  let product = uresize (x *: magic) 64 in
+  let magic = of_int_trunc ~width:32 0x028F5C29 in
+  let product = uresize ~width:64 (x *: magic) in
   (* shift right by 32 to get quotient *)
-  let shifted = srl product 32 in
-  uresize shifted 32
+  let shifted = srl ~by:32 product in
+  uresize ~width:32 shifted
 
 (* modulo 100 using subtraction: x - (x/100)*100 *)
 let mod_by_100 x =
   let quotient = div_by_100 x in
-  let hundred = of_int ~width:32 100 in
-  let mult_result = uresize (quotient *: hundred) 32 in
+  let hundred = of_int_trunc ~width:32 100 in
+  let mult_result = uresize ~width:32 (quotient *: hundred) in
   x -: mult_result
 
 module I = struct
@@ -47,7 +47,6 @@ end
 
 let create (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.clear () in
-  let spec_with_reset = Reg_spec.override spec ~clear_to:(of_int ~width:32 50) in
 
   (* helper function to compute next position *)
   let compute_next_pos curr_pos_val =
@@ -68,8 +67,8 @@ let create (i : _ I.t) =
     let abs_val = mux2 is_neg (negate new_pos_left) new_pos_left in
     let abs_div = div_by_100 abs_val in
     let signed_div = mux2 is_neg (negate abs_div) abs_div in
-    let hundred = of_int ~width:32 100 in
-    let mult_result = uresize (signed_div *: hundred) 32 in
+    let hundred = of_int_trunc ~width:32 100 in
+    let mult_result = uresize ~width:32 (signed_div *: hundred) in
     let remainder = new_pos_left -: mult_result in
     (* remainder is now in range [-99, 99] for our inputs *)
     let adjusted = remainder +: hundred in
@@ -78,7 +77,7 @@ let create (i : _ I.t) =
     let result_left = mux2 is_negative result_left_neg new_pos_left in
     mux2 i.direction result_right result_left
   in  (* State registers *)
-  let curr_pos = reg_fb spec_with_reset ~enable:i.valid ~width:32 ~f:compute_next_pos in
+  let curr_pos = reg_fb spec ~enable:i.valid ~width:32 ~f:compute_next_pos in
 
   (* combinational logic for new position value (used for count and part_2_count) *)
   let next_pos = compute_next_pos curr_pos in
@@ -89,8 +88,8 @@ let create (i : _ I.t) =
   ) in
 
   let part_2_count = reg_fb spec ~enable:i.valid ~width:32 ~f:(fun part_2_count ->
-    let one = of_int ~width:32 1 in
-    let zero = of_int ~width:32 0 in
+    let one = of_int_trunc ~width:32 1 in
+    let zero = of_int_trunc ~width:32 0 in
 
     (* right: (curr_pos + value) / 100 *)
     let new_pos_right = curr_pos +: i.value in
@@ -132,31 +131,39 @@ let simulate () =
   inputs.valid := Bits.gnd;
   Cyclesim.cycle sim;
 
+  (* reset the current position to 50 *)
+  let direction = 1 in
+  let value = 50 in
+
+  inputs.valid := Bits.vdd;
+  inputs.direction := Bits.of_int_trunc ~width:1 direction;
+  inputs.value := Bits.of_int_trunc ~width:32 value;
+  Cyclesim.cycle sim;
+
   let lines = In_channel.read_lines "../inputs/day1_in.txt" in
   List.iter lines ~f:(fun line ->
     let direction = if Char.equal line.[0] 'R' then 1 else 0 in
     let value = Int.of_string (String.sub line ~pos:1 ~len:(String.length line - 1)) in
 
     inputs.valid := Bits.vdd;
-    inputs.direction := Bits.of_int ~width:1 direction;
-    inputs.value := Bits.of_int ~width:32 value;
-    Cyclesim.cycle sim
-  );  (* Deassert valid and cycle once more to let final values settle *)
+    inputs.direction := Bits.of_int_trunc ~width:1 direction;
+    inputs.value := Bits.of_int_trunc ~width:32 value;
+    Cyclesim.cycle sim;
+  );
+  (* deassert valid and cycle once more to let final values settle *)
   inputs.valid := Bits.gnd;
   Cyclesim.cycle sim;
 
-  let curr_pos = Bits.to_int !(outputs.curr_pos) in
-  let count = Bits.to_int !(outputs.count) in
-  let part_2_count = Bits.to_int !(outputs.part_2_count) in
+  let curr_pos = Bits.to_int_trunc !(outputs.curr_pos) in
+  let count = Bits.to_int_trunc !(outputs.count) in
+  let part_2_count = Bits.to_int_trunc !(outputs.part_2_count) in
 
   (curr_pos, count, part_2_count, sim)
 
-let generate_verilog () =
+let _generate_verilog () =
   let module Circuit = Circuit.With_interface(I)(O) in
   let circuit = Circuit.create_exn ~name:"day1_hw" create in
-  let verilog = Rtl.output ~output_mode:(To_file "day1_hw/day1_hw.v") Verilog circuit in
-  printf "Generated Verilog RTL: day1_hw/day1_hw.v\n";
-  verilog
+  Rtl.print Verilog circuit
 
 let () =
   let start_time = Time_ns.now () in
@@ -172,5 +179,5 @@ let () =
   printf "Time:         %s\n" (Time_ns.Span.to_string duration);
   printf "\n";
 
-  let _ = generate_verilog () in
-  printf "Verilog RTL successfully generated!\n"
+  (* uncomment this to print the Verilog to stdout *)
+  (* _generate_verilog () *)
