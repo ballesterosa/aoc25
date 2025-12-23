@@ -51,17 +51,17 @@ let create (i : Signal.t I.t) =
 
   let row = reg_fb spec ~width:3 ~enable:parse_enable ~f:(fun r ->
     mux2 is_newline
-      (mux2 (r ==:. 4) (of_int ~width:3 0) (r +:. 1))
+      (mux2 (r ==:. 4) (of_int_trunc ~width:3 0) (r +:. 1))
       r) in
 
   let col = wire 12 in
 
   let current_num = reg_fb spec ~width:32 ~enable:parse_enable ~f:(fun num ->
-    let digit_val = uresize (i.data_byte -:. ascii_0) 32 in
-    let times_ten = uresize (num *: of_int ~width:32 10) 32 in
+    let digit_val = uresize ~width:32 (i.data_byte -:. ascii_0) in
+    let times_ten = uresize ~width:32 (num *: of_int_trunc ~width:32 10) in
     mux2 is_digit
       (times_ten +: digit_val)
-      (of_int ~width:32 0)) in
+      (of_int_trunc ~width:32 0)) in
 
   let num_done = parse_enable &: (current_num <>:. 0) &: (is_space |: is_newline) in
   let col_bits = 10 in
@@ -73,11 +73,11 @@ let create (i : Signal.t I.t) =
     multiport_memory (1 lsl col_bits)
       ~write_ports:[| { Write_port.
         write_clock = i.clock;
-        write_address = uresize col col_bits;
+        write_address = uresize ~width:col_bits col;
         write_enable = num_done &: (row ==:. row_idx);
         write_data = current_num;
       } |]
-      ~read_addresses:[| uresize read_addr col_bits |] in
+      ~read_addresses:[| uresize ~width:col_bits read_addr |] in
 
   let row0_data = make_row_storage 0 in
   let row1_data = make_row_storage 1 in
@@ -87,49 +87,49 @@ let create (i : Signal.t I.t) =
   let ops_data = multiport_memory (1 lsl col_bits)
     ~write_ports:[| { Write_port.
       write_clock = i.clock;
-      write_address = uresize col col_bits;
+      write_address = uresize ~width:col_bits col;
       write_enable = parse_enable &: (row ==:. 4) &: is_operator;
-      write_data = uresize is_star 32;
+      write_data = uresize ~width:32 is_star;
     } |]
-    ~read_addresses:[| uresize read_addr col_bits |] in
+    ~read_addresses:[| uresize ~width:col_bits read_addr |] in
 
   let col_advance = num_done |: (parse_enable &: (row ==:. 4) &: is_operator) in
   let col_reg = reg_fb spec ~width:12 ~enable:parse_enable ~f:(fun c ->
     mux2 is_newline
-      (of_int ~width:12 0)
+      (of_int_trunc ~width:12 0)
       (mux2 col_advance (c +:. 1) c)) in
-  let () = col <== col_reg in
+  assign col col_reg;
   let next_col = col_reg in
 
   let max_col = reg_fb spec ~width:12 ~enable:parse_enable ~f:(fun mc ->
     mux2 (next_col >: mc) next_col mc) in
 
-  let () = compute_enable <== (state ==:. 2) in
+  assign compute_enable (state ==:. 2);
   let compute_col_reg = reg_fb spec ~width:12 ~enable:compute_enable ~f:(fun cc ->
     mux2 (cc <: max_col) (cc +:. 1) cc) in
-  let () = compute_col <== compute_col_reg in
+  assign compute_col compute_col_reg;
 
   let all_done = compute_enable &: (compute_col_reg >=: max_col) in
   let state_reg = reg_fb spec ~width:3 ~enable:vdd ~f:(fun st ->
     mux st [
-      mux2 i.start (of_int ~width:3 1) (of_int ~width:3 0);
-      mux2 i.input_done (of_int ~width:3 2) (of_int ~width:3 1);
-      mux2 all_done (of_int ~width:3 3) (of_int ~width:3 2);
-      of_int ~width:3 3;
+      mux2 i.start (of_int_trunc ~width:3 1) (of_int_trunc ~width:3 0);
+      mux2 i.input_done (of_int_trunc ~width:3 2) (of_int_trunc ~width:3 1);
+      mux2 all_done (of_int_trunc ~width:3 3) (of_int_trunc ~width:3 2);
+      of_int_trunc ~width:3 3;
     ]) in
-  let () = state <== state_reg in
+  assign state state_reg;
 
-  let read_v0 = reg spec ~enable:compute_enable (uresize row0_data.(0) 64) in
-  let read_v1 = reg spec ~enable:compute_enable (uresize row1_data.(0) 64) in
-  let read_v2 = reg spec ~enable:compute_enable (uresize row2_data.(0) 64) in
-  let read_v3 = reg spec ~enable:compute_enable (uresize row3_data.(0) 64) in
+  let read_v0 = reg spec ~enable:compute_enable (uresize ~width:64 row0_data.(0)) in
+  let read_v1 = reg spec ~enable:compute_enable (uresize ~width:64 row1_data.(0)) in
+  let read_v2 = reg spec ~enable:compute_enable (uresize ~width:64 row2_data.(0)) in
+  let read_v3 = reg spec ~enable:compute_enable (uresize ~width:64 row3_data.(0)) in
   let read_op = reg spec ~enable:compute_enable ops_data.(0) in
 
-  let is_mult = bit read_op 0 in  (* 1 for *, 0 for + *)
+  let is_mult = bit ~pos:0 read_op in  (* 1 for *, 0 for + *)
   let mult_result =
-    let m1 = uresize (read_v0 *: read_v1) 64 in
-    let m2 = uresize (m1 *: read_v2) 64 in
-    uresize (m2 *: read_v3) 64 in
+    let m1 = uresize ~width:64 (read_v0 *: read_v1) in
+    let m2 = uresize ~width:64 (m1 *: read_v2) in
+    uresize ~width:64 (m2 *: read_v3) in
   let add_result = read_v0 +: read_v1 +: read_v2 +: read_v3 in
   let col_result = mux2 is_mult mult_result add_result in
 
@@ -142,11 +142,10 @@ let create (i : Signal.t I.t) =
     grand_total = grand_total;
   }
 
-let generate_verilog () =
-  let module Circuit = Circuit.With_interface(I)(O) in
+let _generate_verilog () =
+  let module Circuit = Hardcaml.Circuit.With_interface(I)(O) in
   let circuit = Circuit.create_exn ~name:"day6_hw_part1" create in
-  let _verilog = Rtl.output ~output_mode:(To_file "day6_hw/day6_hw_part1.v") Verilog circuit in
-  printf "generated Verilog RTL: day6_hw/day6_hw_part1.v\n"
+  Rtl.print Verilog circuit
 
 (* testbench *)
 let () =
@@ -172,7 +171,7 @@ let () =
 
   Array.iteri bytes ~f:(fun _idx byte ->
     inputs.data_valid := Bits.vdd;
-    inputs.data_byte := Bits.of_int ~width:8 (Char.to_int byte);
+    inputs.data_byte := Bits.of_int_trunc ~width:8 (Char.to_int byte);
     Cyclesim.cycle sim;
   );
   inputs.data_valid := Bits.gnd;
@@ -192,10 +191,9 @@ let () =
 
   let cycles = wait_done 0 in
 
-  let total = Bits.to_int64 !(outputs.grand_total) in
+  let total = Bits.to_int64_trunc !(outputs.grand_total) in
   printf "\n=== result ===\n";
   printf "total: %Ld\n" total;
   printf "completed in %d cycles\n" cycles;
 
-  let _ = generate_verilog () in
-  printf "verilog RTL successfully generated!\n"
+  (* _generate_verilog () *)
