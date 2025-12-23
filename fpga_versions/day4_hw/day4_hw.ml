@@ -49,20 +49,20 @@ module Core = struct
 
   let create (i : _ I.t) =
     (* extract the 9 bits from window using bit select *)
-    let nw = select i.window 0 0 in
-    let n  = select i.window 1 1 in
-    let ne = select i.window 2 2 in
-    let w  = select i.window 3 3 in
-    let center = select i.window 4 4 in
-    let e  = select i.window 5 5 in
-    let sw = select i.window 6 6 in
-    let s  = select i.window 7 7 in
-    let se = select i.window 8 8 in
+    let nw = select ~high:0 ~low:0 i.window in
+    let n  = select ~high:1 ~low:1 i.window in
+    let ne = select ~high:2 ~low:2 i.window in
+    let w  = select ~high:3 ~low:3 i.window in
+    let center = select ~high:4 ~low:4 i.window in
+    let e  = select ~high:5 ~low:5 i.window in
+    let sw = select ~high:6 ~low:6 i.window in
+    let s  = select ~high:7 ~low:7 i.window in
+    let se = select ~high:8 ~low:8 i.window in
 
     (* count adjacent '@'s *)
-    let count = uresize nw 4 +: uresize n 4 +: uresize ne 4 +:
-                uresize w 4 +: uresize e 4 +:
-                uresize sw 4 +: uresize s 4 +: uresize se 4 in
+    let count = uresize ~width:4 nw +: uresize ~width:4 n +: uresize ~width:4 ne +:
+                uresize ~width:4 w +: uresize ~width:4 e +:
+                uresize ~width:4 sw +: uresize ~width:4 s +: uresize ~width:4 se in
 
     let count_lt_4 = count <:. 4 in
     let center_not_empty = center in
@@ -123,13 +123,13 @@ module GridProcessor = struct
     (* shift data through line buffers on valid cycles *)
     for idx = 0 to line_length - 1 do
       if idx = 0 then begin
-        row0.(0) <== reg spec ~enable:i.valid parsed_bit;
-        row1.(0) <== reg spec ~enable:i.valid row0.(line_length - 1);
-        row2.(0) <== reg spec ~enable:i.valid row1.(line_length - 1);
+        assign row0.(0) (reg spec ~enable:i.valid parsed_bit);
+        assign row1.(0) (reg spec ~enable:i.valid row0.(line_length - 1));
+        assign row2.(0) (reg spec ~enable:i.valid row1.(line_length - 1));
       end else begin
-        row0.(idx) <== reg spec ~enable:i.valid row0.(idx - 1);
-        row1.(idx) <== reg spec ~enable:i.valid row1.(idx - 1);
-        row2.(idx) <== reg spec ~enable:i.valid row2.(idx - 1);
+        assign row0.(idx) (reg spec ~enable:i.valid row0.(idx - 1));
+        assign row1.(idx) (reg spec ~enable:i.valid row1.(idx - 1));
+        assign row2.(idx) (reg spec ~enable:i.valid row2.(idx - 1));
       end
     done;
 
@@ -186,7 +186,7 @@ let simulate () =
   let grid_outputs = Cyclesim.outputs grid_sim in
 
   grid_inputs.valid := Bits.vdd;
-  grid_inputs.grid_cols := Bits.of_int ~width:8 m;
+  grid_inputs.grid_cols := Bits.of_int_trunc ~width:8 m;
 
   (* stream all characters through the hardware pipeline *)
   let char_count = ref 0 in
@@ -196,26 +196,26 @@ let simulate () =
   printf "streaming grid through hardware pipeline\n";
   List.iter lines ~f:(fun line ->
     String.iter line ~f:(fun c ->
-      grid_inputs.char_data := Bits.of_int ~width:8 (Char.to_int c);
+      grid_inputs.char_data := Bits.of_int_trunc ~width:8 (Char.to_int c);
       Cyclesim.cycle grid_sim;
       char_count := !char_count + 1;
 
       (* get results when valid *)
-      let valid_out = Bits.to_int !(grid_outputs.valid_out) in
+      let valid_out = Bits.to_int_trunc !(grid_outputs.valid_out) in
       if valid_out = 1 then begin
-        let has_lt4 = Bits.to_int !(grid_outputs.has_less_than_4) in
+        let has_lt4 = Bits.to_int_trunc !(grid_outputs.has_less_than_4) in
         part1_results := has_lt4 :: !part1_results
       end
     )
   );
 
   (* flush the pipeline *)
-  grid_inputs.char_data := Bits.of_int ~width:8 0;
+  grid_inputs.char_data := Bits.of_int_trunc ~width:8 0;
   for _ = 1 to (m * 3) do  (* flush 3 rows worth *)
     Cyclesim.cycle grid_sim;
-    let valid_out = Bits.to_int !(grid_outputs.valid_out) in
+    let valid_out = Bits.to_int_trunc !(grid_outputs.valid_out) in
     if valid_out = 1 then begin
-      let has_lt4 = Bits.to_int !(grid_outputs.has_less_than_4) in
+      let has_lt4 = Bits.to_int_trunc !(grid_outputs.has_less_than_4) in
       part1_results := has_lt4 :: !part1_results
     end
   done;
@@ -237,9 +237,9 @@ let simulate () =
   parser_inputs.valid := Bits.vdd;
   List.iteri lines ~f:(fun i line ->
     String.iteri line ~f:(fun j c ->
-      parser_inputs.char_data := Bits.of_int ~width:8 (Char.to_int c);
+      parser_inputs.char_data := Bits.of_int_trunc ~width:8 (Char.to_int c);
       Cyclesim.cycle parser_sim;
-      grid2.(i).(j) <- Bits.to_int !(parser_outputs.is_at)
+      grid2.(i).(j) <- Bits.to_int_trunc !(parser_outputs.is_at)
     )
   );
 
@@ -272,10 +272,10 @@ let simulate () =
             (get_cell 1 (-1) lsl 6) lor (get_cell 1 0 lsl 7) lor (get_cell 1 1 lsl 8)
           in
 
-          core_inputs.window := Bits.of_int ~width:9 window_bits;
+          core_inputs.window := Bits.of_int_trunc ~width:9 window_bits;
           Cyclesim.cycle core_sim;
 
-          if Bits.to_int !(core_outputs.has_less_than_4) = 1 then
+          if Bits.to_int_trunc !(core_outputs.has_less_than_4) = 1 then
             removal_candidates := (i, j) :: !removal_candidates
         end
       done
@@ -299,21 +299,18 @@ let simulate () =
   iterate_removal ();
   (part1_count, !part2_count)
 
-let generate_verilog () =
+let _generate_verilog () =
   let module Circuit = Circuit.With_interface(Core.I)(Core.O) in
   let circuit = Circuit.create_exn ~name:"day4_hw" Core.create in
-  let _verilog = Rtl.output ~output_mode:(To_file "day4_hw/day4_hw.v") Verilog circuit in
-  printf "generated verilog RTL: day4_hw/day4_hw.v\n";
+  let _ = Rtl.print Verilog circuit in
 
   let module ParserCircuit = Hardcaml.Circuit.With_interface(Parser.I)(Parser.O) in
   let parser_circuit = ParserCircuit.create_exn ~name:"day4_parser" Parser.create in
-  let _ = Rtl.output ~output_mode:(To_file "day4_hw/day4_parser.v") Verilog parser_circuit in
-  printf "generated verilog RTL: day4_hw/day4_parser.v\n";
+  let _ = Rtl.print Verilog parser_circuit in
 
   let module GridCircuit = Hardcaml.Circuit.With_interface(GridProcessor.I)(GridProcessor.O) in
   let grid_circuit = GridCircuit.create_exn ~name:"day4_grid_processor" GridProcessor.create in
-  let _ = Rtl.output ~output_mode:(To_file "day4_hw/day4_grid_processor.v") Verilog grid_circuit in
-  printf "generated verilog RTL: day4_hw/day4_grid_processor.v\n"
+  Rtl.print Verilog grid_circuit
 
 let () =
   let start_time = Time_ns.now () in
@@ -328,5 +325,4 @@ let () =
   printf "time:        %s\n" (Time_ns.Span.to_string duration);
   printf "\n";
 
-  let _ = generate_verilog () in
-  printf "verilog RTL successfully generated!\n"
+  (* _generate_verilog () *)
